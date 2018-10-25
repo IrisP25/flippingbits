@@ -10,7 +10,9 @@ void binaryConvert()
 {
     double bits[12] = {0};
     vector<int> t_bit (12),t_bit2 (12);
+    //flipped signal
     int signal = 1004;
+    //unflipped signal
     string binary = bitset<12>(499).to_string();
     string binary2 = bitset<12>(signal).to_string();
     string zero = bitset<1>(0).to_string();
