@@ -58,7 +58,7 @@ using namespace std::chrono;
 int main(int argc, char** argv)
 {
     vector<string> filenames { argv[1] };
-    TFile f_output("JoseFrequency19021_output.root","RECREATE");
+    TFile f_output("flipbitFrequency19021_output.root","RECREATE");
     InputTag wire_tag { "sndaq", "", "SupernovaAssembler" };
     InputTag wire_tag_d { "sndeco", "", "DataRecoSN"};
     // InputTag wire_tag_d { "sndeco", "", "CalDataSN" }; // after deconvolution
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     vector<double> differences, flips;
     ofstream flipsJumps;
    // TH1D
-    flipsJumps.open ("/uboone/app/users/iponce/myGallery/cpp/JoseFrequency19021.txt");
+    flipsJumps.open ("/uboone/app/users/iponce/myGallery/cpp/flipbitFrequency19021.txt");
     TH1D flips_histU("Flips_Uplane", " ; Difference from non flipped signals", 4096,0,4096 );
     TH1D flips_histV("Flips_Vplane", " ; Difference from non flipped signals", 4096,0,4096 );
     TH1D flips_histY("Flips_Yplane", " ; Difference from non flipped signals", 4096,0,4096 );
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
                 double difftoint = 0;
                 double preSample = 0;
                 double postSample = 0;
-                int flips = 0;
+		int flips = 0;
                 //this is looping through the different waveforms and checking for flipped bits
                 for (size_t iTick = ROI_pre.begin_index(); iTick < ROI_pre.end_index()-1; ++iTick)
                 {
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
                     if (iTick - ROI_pre.begin_index() == 0)
                     {
                         preSample = 0;
-                        postSample = (ROI_pre[iTick+1] );
+                        postSample = ((ROI_pre[iTick+1] + ROI_pre[iTick+2])/2);
                         difftoint = ROI_pre[iTick] - postSample;
                         if (difftoint > 32)
                         {
@@ -132,7 +132,7 @@ int main(int argc, char** argv)
                             if (flips>0)
                             {
                                 differences.push_back(difftoint);
-                                flipsJumps << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << "\n";
+                                flipsJumps << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " " << iTick << " " << preSample << " " << postSample << " "  <<ROI_pre[iTick] <<" "<< difftoint << "\n";
                                 flips_Channels.Fill(channel_pre,difftoint);
                                 if( channel_pre < 2400)
                                 {
@@ -144,27 +144,89 @@ int main(int argc, char** argv)
                                 }
                                 else
                                 {
-                                    //cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
                                     flips_histY.Fill(difftoint,1);
+		//		    cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
                                 }
                             }
                         }
                         
                     }//ENDS LOOP FOR FIRST SAMPLE
-
+                    else if (iTick - ROI_pre.begin_index() == 1)
+                    {
+                        preSample = ROI_pre[iTick-1];
+                        postSample = ((ROI_pre[iTick+1] + ROI_pre[iTick+2])/2);
+                        if (preSample > postSample)
+                        {
+                            difftoint = ROI_pre[iTick] - postSample;
+                            
+                            if (difftoint > 32)
+                            {
+                                flips += 1;
+                                if (flips>0)
+                                {
+                                    differences.push_back(difftoint);
+                                    flipsJumps << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre <<" " << iTick<< " " << preSample << " " << postSample << " "<< ROI_pre[iTick] << " " << difftoint << "\n";
+                                    flips_Channels.Fill(channel_pre,difftoint);
+                                    if( channel_pre < 2400)
+                                    {
+                                        flips_histU.Fill(difftoint,1);
+                                    }
+                                    else if(channel_pre >= 2400 && channel_pre < 4800)
+                                    {
+                                        flips_histV.Fill(difftoint,1);
+                                    }
+                                    else
+                                    {
+                       //                  cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;                    
+		                        flips_histY.Fill(difftoint,1);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        else
+                        {
+                            difftoint = ROI_pre[iTick] - preSample;
+                            if ( difftoint > 32)
+                            {
+                                flips += 1;
+                                if (flips>0)
+                                {
+                                    flipsJumps << event << " " <<channel_pre<< " " << firstTick_pre<< " " << endTick_pre << " " << iTick << " " << preSample << " " << postSample << " "<<  ROI_pre[iTick]<<" "<<difftoint << "\n";
+                                    differences.push_back(difftoint);
+                                    flips_Channels.Fill(channel_pre,difftoint);
+                                    if( channel_pre < 2400)
+                                    {
+                                        flips_histU.Fill(difftoint,1);
+                                    }
+                                    else if(channel_pre >= 2400 && channel_pre < 4800)
+                                    {
+                                        flips_histV.Fill(difftoint,1);
+                                    }
+                                    else
+                                    {
+                                        flips_histY.Fill(difftoint,1);
+                     //                   cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
+				     }
+                                }
+                                
+                                
+                            }
+                        }
+                    }//ENDS LOOPS FOR SECOND SAMPLE
                     
                     //checks if you're at the end of the ROI
-                    else if (ROI_pre.end_index() - iTick == 0)
+                    else if ((ROI_pre.end_index()-1) - iTick == 0)
                     {
                         postSample = 0;
-                        preSample =(ROI_pre[iTick-1]);
+                        preSample =((ROI_pre[iTick-1] + ROI_pre[iTick-2])/2);
                         difftoint = ROI_pre[iTick] - preSample; //assume presample is corect
                         if (difftoint > 32)
                         {
                             flips += 1;
                             if (flips>0)
                             {
-                                flipsJumps <<event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " " << difftoint << "\n";
+                                flipsJumps <<event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " " << iTick<< " "<< preSample << " " << postSample << " " << ROI_pre[iTick] << " " << difftoint << "\n";
                                 differences.push_back(difftoint);
                                 flips_Channels.Fill(channel_pre,difftoint);
                                 if( channel_pre < 2400)
@@ -178,36 +240,125 @@ int main(int argc, char** argv)
                                 else
                                 {
                                     flips_histY.Fill(difftoint,1);
+	             //               cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
                                 }
                             }
                         }
                     }//ENDS LOOP OVER LAST SAMPLE
-
+                    else if ((ROI_pre.end_index()-1) - iTick == 1)
+                    {
+                        postSample = ROI_pre[iTick-1];
+                        preSample = ((ROI_pre[iTick-1] + ROI_pre[iTick-2])/2);
+                        if (preSample > postSample)
+                        {
+                            difftoint = ROI_pre[iTick] - postSample;
+                            if (difftoint > 32)
+                            {
+                                flips += 1;
+                                if (flips>0)
+                                {
+                                    flipsJumps << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre <<" " << iTick<<  " "<< preSample << " " << postSample << " " << ROI_pre[iTick] << " " << difftoint << "\n";
+                                    differences.push_back(difftoint);
+                                    flips_Channels.Fill(channel_pre,difftoint);
+                                    if( channel_pre < 2400)
+                                    {
+                                        flips_histU.Fill(difftoint,1);
+                                    }
+                                    else if(channel_pre >= 2400 && channel_pre < 4800)
+                                    {
+                                        flips_histV.Fill(difftoint,1);
+                                    }
+                                    else
+                                    {
+                       //                 cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
+                                        flips_histY.Fill(difftoint,1);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            difftoint = ROI_pre[iTick] - preSample;
+                            if (difftoint > 32)
+                            {
+                                flips += 1;
+                                if ( flips>0)
+                                {
+                                    flipsJumps << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre <<" " << iTick << " "<< preSample << " " << postSample << " "<< ROI_pre[iTick] <<" " <<difftoint << "\n";
+                                    differences.push_back(difftoint);
+                                    flips_Channels.Fill(channel_pre,difftoint);
+                                    if( channel_pre < 2400)
+                                    {
+                                        flips_histU.Fill(difftoint,1);
+                                    }
+                                    else if(channel_pre >= 2400 && channel_pre < 4800)
+                                    {
+                                        flips_histV.Fill(difftoint,1);
+                                    }
+                                    else
+                                    {
+                     //                     cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
+                                        flips_histY.Fill(difftoint,1);
+                                    }
+                                }
+                            }
+                        }
+                    }//ENDS LOOP OVER SECOND TO LAST SAMPLE
                     else
                     {
-                        preSample = (ROI_pre[iTick-1]);
-                        postSample = (ROI_pre[iTick+1]);
-
-                        difftoint = ROI_pre[iTick] - ((postSample+preSample)/2);
-                        if (difftoint > 32)
+                        preSample = ((ROI_pre[iTick-2]+ROI_pre[iTick-1])/2);
+                        postSample = ((ROI_pre[iTick+2]+ROI_pre[iTick+1])/2);
+                        if (preSample > postSample)
                         {
-                            flips += 1;
-                            if (flips>0)
+                            difftoint = ROI_pre[iTick] - postSample;
+                            if (difftoint > 32)
                             {
-                                flipsJumps <<event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  <<difftoint << "\n";
-                                flips_Channels.Fill(channel_pre,difftoint);
-                                differences.push_back(difftoint);
-                                if( channel_pre < 2400)
+                                flips += 1;
+                                if (flips>0)
                                 {
-                                    flips_histU.Fill(difftoint,1);
+                                    flipsJumps <<event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " " << iTick << " " << preSample << " " << postSample << " " <<ROI_pre[iTick] << " " << difftoint << "\n";
+                                    flips_Channels.Fill(channel_pre,difftoint);
+                                    differences.push_back(difftoint);
+                                    if( channel_pre < 2400)
+                                    {
+                                        flips_histU.Fill(difftoint,1);
+                                    }
+                                    else if(channel_pre >= 2400 && channel_pre < 4800)
+                                    {
+                                        flips_histV.Fill(difftoint,1);
+                                    }
+                                    else
+                                    { 
+                         //           cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
+                                        flips_histY.Fill(difftoint,1);
+                                    }
                                 }
-                                else if(channel_pre >= 2400 && channel_pre < 4800)
+                            }
+                        }
+                        else
+                        {
+                            difftoint = ROI_pre[iTick] - preSample;
+                            if (difftoint > 32)
+                            {
+                                flips +=1;
+                                if (flips>0)
                                 {
-                                    flips_histV.Fill(difftoint,1);
-                                }
-                                else
-                                {
-                                    flips_histY.Fill(difftoint,1);
+                                    flipsJumps<<event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre<< " " << iTick<< " " << preSample << " " << postSample << " " << ROI_pre[iTick] << " " <<  difftoint << "\n";
+                                    differences.push_back(difftoint);
+                                    flips_Channels.Fill(channel_pre,difftoint);
+                                    if( channel_pre < 2400)
+                                    {
+                                        flips_histU.Fill(difftoint,1);
+                                    }
+                                    else if(channel_pre >= 2400 && channel_pre < 4800)
+                                    {
+                                        flips_histV.Fill(difftoint,1);
+                                    }
+                                    else
+                                    { 
+                                    // cout << event << " " <<channel_pre << " " << firstTick_pre << " " << endTick_pre << " "  << difftoint << " " << preSample << " " << postSample << endl;
+                                        flips_histY.Fill(difftoint,1);
+                                    }
                                 }
                             }
                         }
@@ -350,7 +501,7 @@ int main(int argc, char** argv)
     double power2 = 0;
     //double flips[differences.size()] = {0};
     TH2D flipfrequency("flip_freq","frequency of signal differences; Power of 2; Frequency",5000,0,5000,1,1,2);
-//    TH1D* d = new TH1D("background","",flips_histU.GetNbinsX(),0,flips_histU.GetNbinsX());
+    TH1D* d = new TH1D("background","",flips_histU.GetNbinsX(),0,flips_histU.GetNbinsX());
     for (unsigned int i=0; i < differences.size(); i++)
     {
         power2 = log2 (differences[i]);
@@ -369,7 +520,7 @@ int main(int argc, char** argv)
 	l->Draw("same");
     }
     c1->cd();
-/*
+
     TSpectrum *s = new TSpectrum();
     //int bins = flips_histU.GetNbinsX();
     double source[4096] = {0};
@@ -378,13 +529,12 @@ int main(int argc, char** argv)
 	source[i] = flips_histU.GetBinContent(i+1);
     }
 
-    s->Background(source,flips_histU.GetNbinsX(),6,TSpectrum::kBackDecreasingWindow,TSpectrum::kBackOrder2,kFALSE,TSpectrum::kBackSmoothing3,kFALSE);
-*///","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
-//    for ( int i =0; i<flips_histU.GetNbinsX();i++)
-//    {
-//	d->SetBinContent(i+1,source[i]);
-//    }
-//    d->Draw("SAME L");
+    s->Background(source,flips_histU.GetNbinsX(),8,TSpectrum::kBackDecreasingWindow,TSpectrum::kBackOrder2,kFALSE,TSpectrum::kBackSmoothing3,kFALSE);
+//","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
+    for ( int i =0; i<flips_histU.GetNbinsX();i++)    {
+	d->SetBinContent(i+1,source[i]);
+    }
+    d->Draw("SAME L");
     c1->Print(".png");
     TCanvas *c2 = new TCanvas;
     c2->cd();
@@ -425,9 +575,10 @@ int main(int argc, char** argv)
    c4->cd();
    c4->Print(".png");
 
-   // TSpectrum *s = new TSpectrum();
+    //TSpectrum *s = new TSpectrum();
     //s->Background(flips_histU, flips_histU.GetNbins(),"kBackIncreasingWindow","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
     f_output.cd();
+    d->Write();
     flipfrequency.Write();
     c1->Write();
     c2->Write();
