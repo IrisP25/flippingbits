@@ -501,7 +501,7 @@ int main(int argc, char** argv)
     double power2 = 0;
     //double flips[differences.size()] = {0};
     TH2D flipfrequency("flip_freq","frequency of signal differences; Power of 2; Frequency",5000,0,5000,1,1,2);
-    TH1D* d = new TH1D("background","",flips_histU.GetNbinsX(),0,flips_histU.GetNbinsX());
+
     for (unsigned int i=0; i < differences.size(); i++)
     {
         power2 = log2 (differences[i]);
@@ -520,22 +520,25 @@ int main(int argc, char** argv)
 	l->Draw("same");
     }
     c1->cd();
-
-    TSpectrum *s = new TSpectrum();
+    
+    TH1D* d_U = new TH1D("background_U","",flips_histU.GetNbinsX(),0,flips_histU.GetNbinsX());
+    TSpectrum *s_U = new TSpectrum();
     //int bins = flips_histU.GetNbinsX();
-    double source[4096] = {0};
+    double source_U[4096] = {0};
     for ( int i =0; i < flips_histU.GetNbinsX(); i++)
     {
-	source[i] = flips_histU.GetBinContent(i+1);
+	source_U[i] = flips_histU.GetBinContent(i+1);
     }
 
-    s->Background(source,flips_histU.GetNbinsX(),8,TSpectrum::kBackDecreasingWindow,TSpectrum::kBackOrder2,kFALSE,TSpectrum::kBackSmoothing3,kFALSE);
+    s_U->Background(source_U,flips_histU.GetNbinsX(),8,TSpectrum::kBackDecreasingWindow,TSpectrum::kBackOrder2,kFALSE,TSpectrum::kBackSmoothing3,kFALSE);
 //","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
     for ( int i =0; i<flips_histU.GetNbinsX();i++)    {
-	d->SetBinContent(i+1,source[i]);
+	d_U->SetBinContent(i+1,source_U[i]);
     }
-    d->Draw("SAME L");
+    d_U->Draw("SAME L");
+    
     c1->Print(".png");
+    
     TCanvas *c2 = new TCanvas;
     c2->cd();
     flips_histV.Draw();
@@ -548,7 +551,24 @@ int main(int argc, char** argv)
  
     }
     c2->cd();
+    
+    TH1D* d_V = new TH1D("background_V","",flips_histV.GetNbinsX(),0,flips_histV.GetNbinsX());
+    TSpectrum *s_V = new TSpectrum();
+    //int bins = flips_histU.GetNbinsX();
+    double source_V[4096] = {0};
+    for ( int i =0; i < flips_histV.GetNbinsX(); i++)
+    {
+        source_V[i] = flips_histV.GetBinContent(i+1);
+    }
+    
+    s_V->Background(source_V,flips_histU.GetNbinsX(),8,TSpectrum::kBackDecreasingWindow,TSpectrum::kBackOrder2,kFALSE,TSpectrum::kBackSmoothing3,kFALSE);
+    //","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
+    for ( int i =0; i<flips_histV.GetNbinsX();i++)    {
+        d_V->SetBinContent(i+1,source_V[i]);
+    }
+    d_V->Draw("SAME L");
     c2->Print(".png");
+    
     TCanvas *c3 = new TCanvas; 
     c3->cd();
     flips_histY.Draw();
@@ -560,7 +580,24 @@ int main(int argc, char** argv)
         Y->Draw("same");
     }
     c3->cd();
+    
+    TH1D* d_Y = new TH1D("background_Y","",flips_histY.GetNbinsX(),0,flips_histY.GetNbinsX());
+    TSpectrum *s_Y = new TSpectrum();
+    //int bins = flips_histU.GetNbinsX();
+    double source_Y[4096] = {0};
+    for ( int i =0; i < flips_histY.GetNbinsX(); i++)
+    {
+        source_Y[i] = flips_histY.GetBinContent(i+1);
+    }
+    
+    s_Y->Background(source_Y,flips_histU.GetNbinsX(),8,TSpectrum::kBackDecreasingWindow,TSpectrum::kBackOrder2,kFALSE,TSpectrum::kBackSmoothing3,kFALSE);
+    //","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
+    for ( int i =0; i<flips_histY.GetNbinsX();i++)    {
+        d_Y->SetBinContent(i+1,source_Y[i]);
+    }
+    d_Y->Draw("SAME L");
     c3->Print(".png");
+    
     
    TCanvas *c4 = new TCanvas;
    c4->cd();
@@ -578,7 +615,9 @@ int main(int argc, char** argv)
     //TSpectrum *s = new TSpectrum();
     //s->Background(flips_histU, flips_histU.GetNbins(),"kBackIncreasingWindow","kBackOrder2","kFALSE","kBackSmoothing3","kFALSE");
     f_output.cd();
-    d->Write();
+    d_U->Write();
+    d_V->Write();
+    d_Y->Write();
     flipfrequency.Write();
     c1->Write();
     c2->Write();
